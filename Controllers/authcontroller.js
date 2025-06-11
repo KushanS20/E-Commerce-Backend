@@ -1,53 +1,55 @@
-const db = require("../Config/db");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-
+const bcrypt = require('bcrypt');
+const User = require('../Models/user');
+const generateToken = require('../Utils/jwtUtils');
 
 exports.register = async (req, res) => {
-    const { name,email,password,sex,mobile,address,postal_code} = req.body;
-    try {
-        const hashedPassword = await bcrypt.hash(password, 12);
-        const [existing] = await db.query("SELECT * FROM user WHERE email=?",[email]);
-        if(existing.length > 0){
-            return res.status(400).json({error:"Email already exists"});
-        }
-        await db.query("INSERT INTO user (name,email,password,sex,mobile,address,postal_code) VALUES (?,?,?,?,?,?,?)",
-            [name,email,hashedPassword,sex,mobile,address,postal_code]);
-        res.json({message:"User Successfully registered"});
+  try {
+    const { fName, lName, email, mobile, address_line, city, district, province, postalCode, sex, birthday, password, confirmPassword } = req.body;
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match' });
     }
-    catch(err){
-        res.status(500).json({message:err.message});
-    }
+
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) return res.status(409).json({ message: 'Email already exists' });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      fName, lName, email, mobile, address_line, city, district, province, postalCode, sex, birthday, password: hashedPassword
+    });
+
+    res.status(201).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        fName: user.fName,
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 exports.login = async (req, res) => {
-    const { email,password } = req.body;
-    try {
-        const [users] = await db.query("SELECT * FROM user WHERE email = ?", [email]);
-        if (users.length === 0) return res.status(400).json({error: "User not found"});
+  try {
+    const { email, password } = req.body;
 
-        const user = users[0];
-        const valid = await bcrypt.compare(password, user.password);
-        if (!valid) return res.status(401).json({error: "Invalid password"});
+    const user = await User.findOne({ where: { email } });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const token = jwt.sign({id: user.id, email: user.email}, process.env.JWT_SECRET, {
-            expiresIn: "1h",
-        });
-        res.json({token});
-    }catch(err) {
-        res.status(500).json({message: err.message});
-    }
-}
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
-exports.profile = async (req, res) => {
-    try{
-        const [users] = await db.query("SELECT * FROM user WHERE id = ?",[req.user.id]);
-        if (users.length === 0) return res.status(404).json({error: "User not found"});
-
-        const user = users[0];
-        delete user.password;
-        res.json({user});
-    }catch(err) {
-        res.status(500).json({message: err.message});
-    }
+    res.status(200).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        fName: user.fName,
+      },
+      token: generateToken(user.id)
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };

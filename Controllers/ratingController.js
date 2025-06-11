@@ -1,32 +1,45 @@
-const db = require("../config/db");
+const db = require("../Config/db");
+const { Rating, Product, User } = require('../Models');
 
-exports.addRating = async (req, res) => {
-    const user_id = req.user.id;
-    const { product_id, rating_value, comment } = req.body;
-
-    try {
-        await db.query(
-            `INSERT INTO ratings (product_id, user_id, rating_value, comment) VALUES (?, ?, ?, ?)`,
-            [product_id, user_id, rating_value, comment]
-        );
-
-        res.json({ message: "Rating added" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+exports.getRatingsByProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const ratings = await Rating.findAll({
+      where: { ProductId: productId },
+      include: [{ model: User, attributes: ['id', 'username'] }],
+    });
+    res.status(200).json(ratings);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch ratings' });
+  }
 };
 
-exports.getRatingsForProduct = async (req, res) => {
-    const product_id = req.params.product_id;
+exports.createRating = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { rating, review, userId } = req.body;
 
-    try {
-        const [rows] = await db.query(
-            `SELECT r.rating_value, r.comment, u.name FROM ratings r JOIN user u ON r.user_id = u.id WHERE r.product_id = ?`,
-            [product_id]
-        );
+    const newRating = await Rating.create({
+      rating,
+      review,
+      ProductId: productId,
+      UserId: req.user.id,
+    });
 
-        res.json(rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    res.status(201).json(newRating);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create rating' });
+  }
 };
+
+
+exports.deleteRatingsByProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    await Rating.destroy({ where: { ProductId: productId } });
+    res.status(200).json({ message: 'All ratings deleted for the product' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete ratings' });
+  }
+};
+

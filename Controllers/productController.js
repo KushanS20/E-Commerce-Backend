@@ -1,101 +1,117 @@
-const db = require("../config/db");
+const { Product, Seller, Rating } = require('../Models');
+const { Op } = require("sequelize")
 
-exports.create = async (req, res) => {
-    const { name, description, image_url, price, available_qty, ratings, tags, seller } = req.body;
-    try {
-        await db.query(
-            `INSERT INTO product (name, description, image_url, price, available_qty, ratings, tags, seller)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [name, description, image_url, price, available_qty, ratings, tags, seller]
-        );
-        res.json({ message: "Product added successfully" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+
+exports.getAllProducts = async (req, res) => {
+  const products = await Product.findAll({
+    include: [
+      { model: Seller, attributes: ['name', 'shopName'] },
+      { model: Rating },
+    ]
+  });
+
+  const enriched = products.map(p => {
+    const ratings = p.Ratings || [];
+    const avgRating = ratings.length ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length : 0;
+    return {
+      ...p.toJSON(),
+      averageRating: avgRating.toFixed(1),
+      totalReviews: ratings.length,
+    };
+  });
+
+  res.status(200).json(enriched);
 };
 
-exports.update = async (req, res) => {
-    const { id } = req.params;
-    const { name, description, image_url, price, available_qty, ratings, tags, seller } = req.body;
-    try {
-        const [result] = await db.query(
-            `UPDATE product SET name=?, description=?, image_url=?, price=?, available_qty=?, ratings=?, tags=?, seller=?
-       WHERE id=?`,
-            [name, description, image_url, price, available_qty, ratings, tags, seller, id]
-        );
-        if (result.affectedRows === 0) return res.status(404).json({ error: "Product not found" });
-        res.json({ message: "Product updated successfully" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+exports.createProduct = async (req, res) => {
+  const {
+    productName,
+    category,
+    description,
+    price,
+    discount_available,
+    discount_percentage,
+    primary_image_url,
+    images_url,
+    tags,
+    sellerId
+  } = req.body;
+
+  const product = await Product.create({
+    productName,
+    category,
+    description,
+    price,
+    discount_available,
+    discount_percentage,
+    primary_image_url,
+    images_url,
+    tags,
+    sellerID: sellerId
+  });
+
+  res.status(201).json({ message: "Product created", product });
 };
 
-exports.remove = async (req, res) => {
-    try {
-        const [result] = await db.query("DELETE FROM product WHERE id = ?", [req.params.id]);
-        if (result.affectedRows === 0) return res.status(404).json({ error: "Product not found" });
-        res.json({ message: "Product deleted successfully" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+
+exports.searchProducts = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+
+    if (!keyword) {
+      return res.status(400).json({ error: 'Keyword query parameter is required' });
     }
-};
 
+    const matchedProducts = await Product.findAll({
+      where: {
+        [Op.or]: [
+          { productName: { [Op.like]: `%${keyword}%` } },
+          { description: { [Op.like]: `%${keyword}%` } },
+          { tags: { [Op.like]: `%${keyword}%` } },
+          {category: { [Op.like]: `%${keyword}%` }},
+        ]
+      }
+    });
 
-exports.getAll = async (req, res) => {
-    try {
-        const [rows] = await db.query("SELECT * FROM product");
-        res.json(rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    if(matchedProducts.length === 0){
+      return res.status(200).json({ matchedProducts: [], suggestedProducts: [] });
     }
-};
 
-exports.getById = async (req, res) => {
-    try {
-        const [rows] = await db.query("SELECT * FROM product WHERE id = ?", [req.params.id]);
-        if (!rows.length) return res.status(404).json({ error: "Product not found" });
-        res.json(rows[0]);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
+    const allTags = new Set();
+    const sellerIDs = new Set();
+    const matchedProductIds = matchedProducts.map(p => p.id);
 
-exports.search = async (req, res) => {
-    const { keyword } = req.body;
-    try {
-        const [rows] = await db.query(
-            "SELECT * FROM product WHERE name LIKE ? OR description LIKE ?",
-            [`%${keyword}%`, `%${keyword}%`]
-        );
-        res.json(rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
+    matchedProducts.forEach(product => {
+      sellerIDs.add(product.sellerID);
+      if (typeof product.tags === 'string') {
+        product.tags.split(',').forEach(tag => allTags.add(tag.trim()));
+      }
+    });
 
-exports.getTop = async (req, res) => {
-    try {
-        const [rows] = await db.query(
-            "SELECT * FROM product ORDER BY ratings DESC LIMIT 10"
-        );
-        res.json(rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
+    const tagsArray = Array.from(allTags);
+    const sellersArray = Array.from(sellerIDs);
 
-exports.getSimilar = async (req, res) => {
-    try {
-        const [original] = await db.query("SELECT tags FROM product WHERE id = ?", [req.params.id]);
-        if (!original.length) return res.status(404).json({ error: "Product not found" });
+    const suggestedProducts = await Product.findAll({
+      where: {
+        id: { [Op.notIn]: matchedProductIds },
+        [Op.or]: [
+          { sellerID: { [Op.in]: sellersArray } },
+          ...tagsArray.map(tag => ({ tags: { [Op.like]: `%${tag}%` } }))
+        ]
+      },
+      limit: 10,
+    });
 
-        const tag = original[0].tags.split(",")[0];
-        const [similar] = await db.query(
-            "SELECT * FROM product WHERE tags LIKE ? AND id != ?",
-            [`%${tag}%`, req.params.id]
-        );
-        res.json(similar);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    res.status(200).json({ 
+      matchedProductsCount : matchedProducts.length,
+      suggestedProductsCount: suggestedProducts.length,
+      matchedProducts, 
+      suggestedProducts 
+    });
+
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
 };
