@@ -10,6 +10,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/v1/auth",require("./Routes/authRoutes"));
 app.use('/api/v1/users', require('./Routes/userRoutes'));
+app.use('/api/v1/otp', require('./Routes/otpRoutes'));
 // app.use("/api/v1/products",require("./Routes/productRoutes"));
 // app.use("/api/v1/cart", require("./Routes/cartRoutes"));
 // app.use("/api/v1/checkout", require("./Routes/checkoutRoutes"));
