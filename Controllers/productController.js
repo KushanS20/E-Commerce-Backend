@@ -62,7 +62,7 @@ exports.searchProducts = async (req, res) => {
       return res.status(400).json({ error: 'Keyword query parameter is required' });
     }
 
-    const products = await Product.findAll({
+    const matchedProducts = await Product.findAll({
       where: {
         [Op.or]: [
           { productName: { [Op.like]: `%${keyword}%` } },
@@ -73,12 +73,43 @@ exports.searchProducts = async (req, res) => {
       }
     });
 
-    res.status(200).json({
-      count : products.length,
-      data : {
-        products
+    if(matchedProducts.length === 0){
+      return res.status(200).json({ matchedProducts: [], suggestedProducts: [] });
+    }
+
+    const allTags = new Set();
+    const sellerIDs = new Set();
+    const matchedProductIds = matchedProducts.map(p => p.id);
+
+    matchedProducts.forEach(product => {
+      sellerIDs.add(product.sellerID);
+      if (typeof product.tags === 'string') {
+        product.tags.split(',').forEach(tag => allTags.add(tag.trim()));
       }
     });
+
+    const tagsArray = Array.from(allTags);
+    const sellersArray = Array.from(sellerIDs);
+
+    const suggestedProducts = await Product.findAll({
+      where: {
+        id: { [Op.notIn]: matchedProductIds },
+        [Op.or]: [
+          { sellerID: { [Op.in]: sellersArray } },
+          ...tagsArray.map(tag => ({ tags: { [Op.like]: `%${tag}%` } }))
+        ]
+      },
+      limit: 10,
+    });
+
+    res.status(200).json({ 
+      matchedProductsCount : matchedProducts.length,
+      suggestedProductsCount: suggestedProducts.length,
+      matchedProducts, 
+      suggestedProducts 
+    });
+
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch products' });
