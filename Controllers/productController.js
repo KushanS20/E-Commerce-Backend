@@ -1,8 +1,5 @@
-// const Product = require('../Models/product');
-// const Seller = require('../Models/seller');
-// const Rating = require('../Models/rating');
-// ✅ This loads all models with associations
 const { Product, Seller, Rating } = require('../Models');
+const { Op } = require("sequelize")
 
 
 exports.getAllProducts = async (req, res) => {
@@ -54,4 +51,36 @@ exports.createProduct = async (req, res) => {
   });
 
   res.status(201).json({ message: "Product created", product });
+};
+
+
+exports.searchProducts = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+
+    if (!keyword) {
+      return res.status(400).json({ error: 'Keyword query parameter is required' });
+    }
+
+    const products = await Product.findAll({
+      where: {
+        [Op.or]: [
+          { productName: { [Op.like]: `%${keyword}%` } },
+          { description: { [Op.like]: `%${keyword}%` } },
+          { tags: { [Op.like]: `%${keyword}%` } },
+          {category: { [Op.like]: `%${keyword}%` }},
+        ]
+      }
+    });
+
+    res.status(200).json({
+      count : products.length,
+      data : {
+        products
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
 };
