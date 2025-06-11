@@ -14,5 +14,6 @@ app.use('/api/v1/otp', require('./Routes/otpRoutes'));
 app.use('/api/v1/products', require('./Routes/productRoutes'));
 app.use("/api/v1/ratings", require("./Routes/ratingRoutes"));
 app.use("/api/v1/search", require("./Routes/searchProductRoutes"));
+app.use("/api/v1/profile", require("./Routes/userRoutes"))
 
 module.exports = app;

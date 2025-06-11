@@ -1,14 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const protect = require('../Middleware/authMiddleware');
+const profileController = require("../Controllers/userController")
 
-router.get('/profile', protect, (req, res) => {
-  const user = req.user;
-  res.json({
-    id: user.id,
-    name: `${user.fName} ${user.lName}`,
-    email: user.email,
-  });
-});
+router.get("/", protect, profileController.getSignedUserDetails)
+
 
 module.exports = router;
