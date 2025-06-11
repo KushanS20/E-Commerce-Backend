@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const ratingsController = require("../controllers/ratingsController");
+const ratingsController = require("../controllers/ratingController");
 const auth = require("../middleware/auth");
 
 router.post("/", auth, ratingsController.addRating);
