@@ -1,16 +1,14 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../Config/db');
 
-const Seller = sequelize.define('Seller', {
+const Rating = sequelize.define('Rating', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
-  name: DataTypes.STRING,
-  shopName: DataTypes.STRING,
-}, {
-  timestamps: true
+  rating: DataTypes.INTEGER,
+  review: DataTypes.TEXT,
 });
 
-module.exports = Seller;
+module.exports = Rating;
