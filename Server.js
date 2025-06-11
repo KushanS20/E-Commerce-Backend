@@ -4,7 +4,7 @@ const sequelize = require("./Config/db");
 
 const port = process.env.PORT || 3001;
 
-sequelize.sync({ alter: true,force:true }).then(() => {
+sequelize.sync({ alter: true, }).then(() => {
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);
   });

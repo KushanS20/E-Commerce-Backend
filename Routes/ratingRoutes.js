@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const ratingsController = require("../controllers/ratingController");
-const auth = require("../middleware/auth");
+const ratingController = require("../Controllers/ratingController");
+const auth = require("../Middleware/authMiddleware");
 
-router.post("/", auth, ratingsController.addRating);
-router.get("/:product_id", ratingsController.getRatingsForProduct);
+router.get('/products/:productId', ratingController.getRatingsByProduct);
+router.post('/products/:productId', auth,ratingController.createRating);
+router.delete('/products/:productIds',auth, ratingController.deleteRatingsByProduct);
+
 
 module.exports = router;
