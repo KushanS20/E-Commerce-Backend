@@ -15,5 +15,6 @@ app.use('/api/v1/products', require('./Routes/productRoutes'));
 app.use("/api/v1/ratings", require("./Routes/ratingRoutes"));
 app.use("/api/v1/search", require("./Routes/searchProductRoutes"));
 app.use("/api/v1/profile", require("./Routes/userRoutes"))
+app.use("/api/v1/cart", require("./Routes/cartRoutes"))
 
 module.exports = app;
