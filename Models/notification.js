@@ -5,8 +5,7 @@ const Notification = sequelize.define('Notification', {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-        unique: true
+        primaryKey: true
     },
     description: {
         type: DataTypes.TEXT,

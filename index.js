@@ -16,5 +16,9 @@ app.use("/api/v1/ratings", require("./Routes/ratingRoutes"));
 app.use("/api/v1/search", require("./Routes/searchProductRoutes"));
 app.use("/api/v1/profile", require("./Routes/userRoutes"))
 app.use("/api/v1/cart", require("./Routes/cartRoutes"))
+// app.use("/api/v1/notifications", require("./Routes/notificationRoutes"))
+app.use("/api/v1/notifications", require("./Routes/app.routes"))
+app.use("/api/v1/fcm", require("./Routes/fcmRoutes"));
+
 
 module.exports = app;

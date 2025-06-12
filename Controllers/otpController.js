@@ -20,7 +20,23 @@ exports.sendOTP = async (req, res) => {
   res.status(200).json({ message: 'OTP sent to email' });
 };
 
-exports.verifyOTPAndReset = async (req, res) => {
+// exports.verifyOTPAndReset = async (req, res) => {
+//   const { email, otp, newPassword } = req.body;
+
+//   const otpEntry = await Otp.findOne({ where: { email, otp } });
+//   if (!otpEntry || otpEntry.expiresAt < new Date()) {
+//     return res.status(400).json({ message: 'Invalid or expired OTP' });
+//   }
+
+//   const hashedPassword = await bcrypt.hash(newPassword, 10);
+//   await User.update({ password: hashedPassword }, { where: { email } });
+
+//   await Otp.destroy({ where: { email } });
+
+//   res.status(200).json({ message: 'Password reset successful' });
+// };
+
+exports.resetPassword = async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
   const otpEntry = await Otp.findOne({ where: { email, otp } });
@@ -35,3 +51,16 @@ exports.verifyOTPAndReset = async (req, res) => {
 
   res.status(200).json({ message: 'Password reset successful' });
 };
+
+
+exports.verifyOTP = async (req, res) => {
+  const { email, otp } = req.body;
+
+  const otpEntry = await Otp.findOne({ where: { email, otp } });
+  if (!otpEntry || otpEntry.expiresAt < new Date()) {
+    return res.status(400).json({ message: 'Invalid or expired OTP' });
+  }
+
+  res.status(200).json({ message: 'OTP verified successfully' });
+};
+
