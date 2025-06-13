@@ -22,4 +22,7 @@ app.use("/api/v1/notifications", require("./Routes/app.routes"))
 app.use("/api/v1/fcm", require("./Routes/fcmRoutes"));
 
 
+app.use("/api/v1/products/handcrafts", require("./Routes/handcraftRoutes"))
+app.use("/api/v1/products/herbals", require("./Routes/herbalRoutes"))
+
 module.exports = app;
