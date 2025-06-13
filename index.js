@@ -24,5 +24,7 @@ app.use("/api/v1/fcm", require("./Routes/fcmRoutes"));
 
 app.use("/api/v1/products/handcrafts", require("./Routes/handcraftRoutes"))
 app.use("/api/v1/products/herbals", require("./Routes/herbalRoutes"))
-
+app.use("/api/v1/products/spices", require("./Routes/spicesRoute"))
+app.use("/api/v1/products/clothings", require("./Routes/clothingRoutes"))
+app.use("/api/v1/products/food", require("./Routes/foodAndBevRoutes"))
 module.exports = app;
