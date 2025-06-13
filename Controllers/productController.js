@@ -125,6 +125,7 @@ exports.searchProducts = async (req, res) => {
 };
 
 exports.createProduct = async (req, res) => {
+  console.log('Body', req.body)
   try {
     const {
       productName,
@@ -142,7 +143,6 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ error: "Images are required" });
     }
 
-    // Upload files to S3
     const uploadedUrls = await Promise.all(
       files.map(async (file) => {
         const ext = path.extname(file.originalname);
@@ -170,6 +170,8 @@ exports.createProduct = async (req, res) => {
       tags: tags ? JSON.parse(tags) : null,
       sellerID: sellerId,
     });
+
+
 
     res.status(201).json({ message: "Product created", product });
   } catch (error) {

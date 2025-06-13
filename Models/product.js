@@ -12,7 +12,10 @@ const Product = sequelize.define('Product', {
     type: DataTypes.ENUM('handcraft', 'foodAndBev', 'Spices', 'Herbals','clayPots','clothings'),
     allowNull: false,
   },
-  description: DataTypes.TEXT,
+  description: {
+    type:DataTypes.TEXT,
+    allowNull:false
+  },
   price: DataTypes.DECIMAL,
   discount_available: DataTypes.BOOLEAN,
   discount_percentage: DataTypes.DECIMAL,
