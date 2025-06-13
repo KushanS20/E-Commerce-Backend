@@ -7,7 +7,7 @@ router.get('/', productController.getAllProducts);
 // router.post('/', productController.createProduct);
 router.post(
     '/',
-    upload.array('images', 5),
+    upload.array('files', 5),
     productController.createProduct
 );
 
