@@ -1,15 +1,9 @@
 const { Product, Rating, Seller } = require('../Models');
-const { Op } = require('sequelize');
 
-
-const getHandcraftProducts = async (req, res) => {
+const getClothingProducts = async (req, res) => {
   try {
-    const handcrafts = await Product.findAll({
-      where: {
-        category: {
-          [Op.in]: ['handcraft', 'clayPots'],
-        },
-      },
+    const herbals = await Product.findAll({
+      where: { category: 'clothings' },
       include: [
         {
           model: Rating,
@@ -22,7 +16,7 @@ const getHandcraftProducts = async (req, res) => {
       ],
     });
 
-    const enrichedData = handcrafts.map((product) => {
+    const enrichedData = herbals.map((product) => {
       const ratings = product.Ratings || [];
       const totalReviews = ratings.length;
       const averageRating =
@@ -60,5 +54,5 @@ const getHandcraftProducts = async (req, res) => {
 };
 
 module.exports = {
-  getHandcraftProducts,
+  getClothingProducts,
 };
