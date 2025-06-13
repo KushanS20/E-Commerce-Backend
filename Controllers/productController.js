@@ -1,5 +1,8 @@
 const { Product, Seller, Rating } = require('../Models');
 const { Op } = require("sequelize")
+const path = require('path');
+const { uploadFile } = require('../Config/aws');
+
 
 
 exports.getAllProducts = async (req, res) => {
@@ -20,38 +23,43 @@ exports.getAllProducts = async (req, res) => {
     };
   });
 
-  res.status(200).json(enriched);
-};
-
-exports.createProduct = async (req, res) => {
-  const {
-    productName,
-    category,
-    description,
-    price,
-    discount_available,
-    discount_percentage,
-    primary_image_url,
-    images_url,
-    tags,
-    sellerId
-  } = req.body;
-
-  const product = await Product.create({
-    productName,
-    category,
-    description,
-    price,
-    discount_available,
-    discount_percentage,
-    primary_image_url,
-    images_url,
-    tags,
-    sellerID: sellerId
+  res.status(200).json({
+    count: enriched.length,
+    data : {
+      enriched
+    }
   });
-
-  res.status(201).json({ message: "Product created", product });
 };
+
+// exports.createProduct = async (req, res) => {
+//   const {
+//     productName,
+//     category,
+//     description,
+//     price,
+//     discount_available,
+//     discount_percentage,
+//     primary_image_url,
+//     images_url,
+//     tags,
+//     sellerId
+//   } = req.body;
+
+//   const product = await Product.create({
+//     productName,
+//     category,
+//     description,
+//     price,
+//     discount_available,
+//     discount_percentage,
+//     primary_image_url,
+//     images_url,
+//     tags,
+//     sellerID: sellerId
+//   });
+
+//   res.status(201).json({ message: "Product created", product });
+// };
 
 
 exports.searchProducts = async (req, res) => {
@@ -113,5 +121,59 @@ exports.searchProducts = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch products' });
+  }
+};
+
+exports.createProduct = async (req, res) => {
+  try {
+    const {
+      productName,
+      category,
+      description,
+      price,
+      discount_available,
+      discount_percentage,
+      tags,
+      sellerId,
+    } = req.body;
+
+    const files = req.files;
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "Images are required" });
+    }
+
+    // Upload files to S3
+    const uploadedUrls = await Promise.all(
+      files.map(async (file) => {
+        const ext = path.extname(file.originalname);
+        const uniqueName = `products/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        return await uploadFile({
+          fileBuffer: file.buffer,
+          fileName: uniqueName,
+          mimetype: file.mimetype,
+        });
+      })
+    );
+
+    const primaryImage = uploadedUrls[0];
+    const otherImages = uploadedUrls.slice(1);
+
+    const product = await Product.create({
+      productName,
+      category,
+      description,
+      price,
+      discount_available,
+      discount_percentage,
+      primary_image_url: primaryImage,
+      images_url: otherImages,
+      tags: tags ? JSON.parse(tags) : null,
+      sellerID: sellerId,
+    });
+
+    res.status(201).json({ message: "Product created", product });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to create product" });
   }
 };
